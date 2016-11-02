@@ -1,10 +1,14 @@
+import math
 import cv2
 import numpy as np
+from seamcalculations import calculateSeams
 from matplotlib import pyplot as plt
+
 
 #get the image into our variables
 img = cv2.imread("/home/arjun/Pictures/bird.jpg")
-cv2.namedWindow("opencv")
+cv2.namedWindow("energy map")
+cv2.namedWindow("original")
 
 #calculate the gradient of the image
 grad_img = cv2.Laplacian(img, cv2.CV_64F)
@@ -16,13 +20,17 @@ energy_map = cv2.add( cv2.add(b, g), r)
 energy_map_norm = cv2.normalize(energy_map)
 normal_em = cv2.convertScaleAbs(energy_map)
 
-print "energy_map type is " + str(type(energy_map))
+print energy_map.shape
 
-cv2.imshow("opencv", normal_em)
+calculateSeams(energy_map)
 
-cv2.waitKey(0)
+cv2.imshow("energy map", normal_em)
+cv2.imshow("original", img)
 
-def calculateSeams(energyMap):
-    "calculates the seam energies for the energyMap given"
-    return;
-
+while(True):
+    k = cv2.waitKey(0) & 0xFF
+    if k == 27:
+        cv2.destroyAllWindows()
+        break
+    else:
+        print k
