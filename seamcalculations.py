@@ -4,12 +4,13 @@ import numpy as np
 
 class SeamCarver:
     def __init__(self, img):
-        self.img = img
+        self.resized = img.copy()
+        self.orig_img = img.copy()
 
 
     def createEnergyMap(self):
         #calculate the gradient of the image
-        grad_img = cv2.Laplacian(self.img, cv2.CV_64F)
+        grad_img = cv2.Laplacian(self.orig_img, cv2.CV_64F)
         grad_img_abs = np.absolute(grad_img)
 
         #merge the channels to get the energy map
@@ -21,8 +22,8 @@ class SeamCarver:
         energyMap = self.energy_map
         "calculates the seam energies for the energyMap given"
         [height, width] = energyMap.shape[:2]
-        verticalSeams = energyMap.copy()
 
+        verticalSeams = energyMap.copy()
         for rows in range(1, height):
             for cols in range(0, width):
                 center = energyMap[rows-1, cols]
@@ -38,7 +39,28 @@ class SeamCarver:
                 below = energyMap[rows-1, cols+1] if cols < width-1 else float('inf')
                 horizontalSeams[rows, cols] = energyMap[rows, cols]
 
+        self.vertical_seams = verticalSeams
+        self.horizontal_seams = horizontalSeams
         return [verticalSeams, horizontalSeams]
 
+    def removeVerticalSeam(self):
+        #find the lowest energy pixel on bottom row
+        verticalMap = self.vertical_map
+        [height, width] = verticalMap[:2]
+
+        min = [float('inf'), -1]
+        for i in range(width):
+            if min[0] > verticalMap[height-1, i]:
+                min = [verticalMap[height], i]
+
+        seam = []
+        #find the the seam
+        for i in range(height):
+            pass #push pixels to seam
+
+    def removeHorizontalSeam(self):
+        pass #do it
+
+    #Getters and Setters
     def getEnergyMap(self):
         return self.energy_map
