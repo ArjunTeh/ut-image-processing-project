@@ -12,7 +12,8 @@ class SeamCarver:
         self.orig_img = img.copy()
         self.index = 0;
         self.createEnergyMap()
-        self.removedSeams = []
+        self.removedVSeams = []
+        self.removedHSeams = []
 
 
 
@@ -86,12 +87,42 @@ class SeamCarver:
         # print len(seam)
         return seam
 
+    def findHorizontalSeam(self):
+        #find the lowest energy pixel on bottom row
+        horizontalSeams = self.horizontal_seams
+        [height, width] = horizontalSeams.shape[:2]
+
+        min = [float('inf'), -1]
+        for i in range(0, height):
+            if min[0] > horizontalSeams[i, width-1]:
+                min = [horizontalSeams[i, width-1], i]
+
+        seam = [min]
+        row = min[1]
+        for i in range(width-1, 0, -1):
+            next = [horinzontalSeams[row, i], row]
+            if row-1 > 0:
+                if horinzontalSeams[row-1, i] < next[0]:
+                    next = [horizontalSeams[row-1, i], row-1]
+            if row+1 < width:
+                if horizontalSeams[row+1, i] < next[0]:
+                    next = [horizontalSeams[row+1, i], row+1]
+
+            row = next[1]
+            seam.append(next)
+        #seam should have all the horizontal indices
+        #now we try to remove it.
+        # print 'seam: '
+        # print len(seam)
+        return seam
+
+
     def removeVerticalSeam(self):
         vertSeams = self.calculateVerticalSeams()
         seam = self.findVerticalSeam()
         [height, width] = self.resized.shape[:2]
 
-        self.removedSeams.append(copy.deepcopy(seam));
+        self.removedVSeams.append(copy.deepcopy(seam));
 
         for row in range(len(seam)):
             pixel = seam.pop()
@@ -103,7 +134,20 @@ class SeamCarver:
         return self.resized
 
     def removeHorizontalSeam(self):
-        pass #same as Vertical
+        horiSeams = self.calculateHorizontalSeams()
+        seam = self.findHorizontalSeam()
+        [height, width] = self.resized.shape[:2]
+
+        self.removedHSeams.append(copy.deepcopy(seam));
+
+        for col in range(len(seam)):
+            pixel = seam.pop()
+            for row in range(pixel[1], height-1):
+                self.resized[row, col] = self.resized[row+1, col]
+                self.energy_map[row, col] = self.energy_map[row+1, col]
+
+        self.resized = np.delete(self.resized, height-1, 0)
+        return self.resized
 
     def addVerticalSeam(self):
         if (self.index < 0):
