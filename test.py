@@ -5,7 +5,7 @@ import seamcalculations as sc
 from matplotlib import pyplot as plt
 
 #get the image into our variables
-img = cv2.imread("/home/arjun/Pictures/beach.jpg")
+img = cv2.imread("pictures/beach.jpg")
 cv2.namedWindow("energy map", cv2.WINDOW_NORMAL)
 cv2.namedWindow("original" , cv2.WINDOW_NORMAL)
 
@@ -28,6 +28,10 @@ while(cv2.getWindowProperty("original", 0) > -1):
         break
     elif k == 81:
         newimg = seamCarver.removeVerticalSeam()
+        cv2.resizeWindow("energy map", newimg.shape[1], newimg.shape[0])
+        cv2.imshow("energy map", newimg)
+    elif k == 82:
+        newimg = seamCarver.removeHorizontalSeam()
         cv2.resizeWindow("energy map", newimg.shape[1], newimg.shape[0])
         cv2.imshow("energy map", newimg)
     else:
