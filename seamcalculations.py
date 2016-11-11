@@ -1,4 +1,5 @@
 import math
+import copy
 import cv2
 import numpy as np
 
@@ -11,6 +12,7 @@ class SeamCarver:
         self.orig_img = img.copy()
         self.index = 0;
         self.createEnergyMap()
+        self.removedSeams = []
 
 
 
@@ -85,15 +87,17 @@ class SeamCarver:
         return seam
 
     def removeVerticalSeam(self):
-        self.createEnergyMap()
         vertSeams = self.calculateVerticalSeams()
         seam = self.findVerticalSeam()
         [height, width] = self.resized.shape[:2]
+
+        self.removedSeams.append(copy.deepcopy(seam));
 
         for row in range(len(seam)):
             pixel = seam.pop()
             for col in range(pixel[1], width-1):
                 self.resized[row, col] = self.resized[row, col+1]
+                self.energy_map[row, col] = self.energy_map[row, col+1]
 
         self.resized = np.delete(self.resized, width-1, 1)
         return self.resized
