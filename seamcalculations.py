@@ -12,6 +12,8 @@ class SeamCarver:
         self.orig_img = img.copy()
         self.index = 0;
         self.createEnergyMap()
+        self.calculateVerticalSeams()
+        self.calculateHorizontalSeams()
         self.removedVSeams = []
         self.removedHSeams = []
 
@@ -21,7 +23,6 @@ class SeamCarver:
         #calculate the gradient of the image
         grad_img = cv2.Laplacian(self.resized, cv2.CV_64F)
         grad_img_abs = np.absolute(grad_img)
-
         #merge the channels to get the energy map
         b,g,r = cv2.split(grad_img_abs)
         self.energy_map = cv2.add( cv2.add(b, g), r)
@@ -47,7 +48,7 @@ class SeamCarver:
         horizontalSeams = energyMap.copy()
         [height, width] = energyMap.shape[:2]
 
-        for col in range(1, width):
+        for cols in range(1, width):
             for rows in range(0, height):
                 center = energyMap[rows  , cols]
                 below  = energyMap[rows-1, cols] if rows > 0 else float('inf')
@@ -100,9 +101,9 @@ class SeamCarver:
         seam = [min]
         row = min[1]
         for i in range(width-1, 0, -1):
-            next = [horinzontalSeams[row, i], row]
+            next = [horizontalSeams[row, i], row]
             if row-1 > 0:
-                if horinzontalSeams[row-1, i] < next[0]:
+                if horizontalSeams[row-1, i] < next[0]:
                     next = [horizontalSeams[row-1, i], row-1]
             if row+1 < width:
                 if horizontalSeams[row+1, i] < next[0]:
@@ -118,7 +119,6 @@ class SeamCarver:
 
 
     def removeVerticalSeam(self):
-        vertSeams = self.calculateVerticalSeams()
         seam = self.findVerticalSeam()
         [height, width] = self.resized.shape[:2]
 
@@ -129,8 +129,11 @@ class SeamCarver:
             for col in range(pixel[1], width-1):
                 self.resized[row, col] = self.resized[row, col+1]
                 self.energy_map[row, col] = self.energy_map[row, col+1]
+                self.vertical_seams[row, col] = self.vertical_seams[row, col+1]
 
         self.resized = np.delete(self.resized, width-1, 1)
+        self.energy_map = np.delete(self.energy_map, width-1, 1)
+        self.vertical_seams = np.delete(self.vertical_seams, width-1, 1)
         return self.resized
 
     def removeHorizontalSeam(self):
