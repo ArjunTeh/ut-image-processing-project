@@ -54,11 +54,17 @@ class SeamCarver:
         for cols in range(1, width):
             for rows in range(0, height):
                 center = energyMap[rows  , cols]
-                below  = energyMap[rows-1, cols] if rows > 0 else float('inf')
-                above  = energyMap[rows+1, cols] if rows < width-1 else float('inf')
+                if rows > 0:
+                    below = energyMap[rows-1, cols]
+                else:
+                    below = float('inf')
+                if rows < height-1:
+                    above = energyMap[rows+1, cols]
+                else:
+                    above = float('inf')
                 horizontalSeams[rows, cols] = energyMap[rows, cols] + min(above, center, below)
 
-        self.horizontal_seams = horizontalSeams
+        self.horizontal_seam_map = horizontalSeams
         return horizontalSeams
 
 
@@ -89,39 +95,39 @@ class SeamCarver:
                 verticalSeams[i, col] = float('inf')
                 seam.append(next)
 
-
             self.vert_seams.append(seam)
 
         return self.vert_seams
 
-    def findHorizontalSeam(self):
+    def findHorizontalSeams(self, num_seams):
         #find the lowest energy pixel on bottom row
-        horizontalSeams = self.horizontal_seams
+        horizontalSeams = self.horizontal_seam_map
         [height, width] = horizontalSeams.shape[:2]
 
-        min = [float('inf'), -1]
-        for i in range(0, height):
-            if min[0] > horizontalSeams[i, width-1]:
-                min = [horizontalSeams[i, width-1], i]
+        for bleh in range(num_seams):
+            min = [float('inf'), -1]
+            for i in range(0, height):
+                if min[0] > horizontalSeams[i, width-1]:
+                    min = [horizontalSeams[i, width-1], i]
 
-        seam = [min]
-        row = min[1]
-        for i in range(width-1, 0, -1):
-            next = [horizontalSeams[row, i], row]
-            if row-1 > 0:
-                if horizontalSeams[row-1, i] < next[0]:
-                    next = [horizontalSeams[row-1, i], row-1]
-            if row+1 < width:
-                if horizontalSeams[row+1, i] < next[0]:
-                    next = [horizontalSeams[row+1, i], row+1]
+            horizontalSeams[min[1], width-1] = float('inf')
+            seam = [min]
+            row = min[1]
+            for i in range(width-1, 0, -1):
+                next = [horizontalSeams[row, i], row]
+                if row-1 > 0:
+                    if horizontalSeams[row-1, i] < next[0]:
+                        next = [horizontalSeams[row-1, i], row-1]
+                if row+1 < width:
+                    if horizontalSeams[row+1, i] < next[0]:
+                        next = [horizontalSeams[row+1, i], row+1]
 
-            row = next[1]
-            seam.append(next)
-        #seam should have all the horizontal indices
-        #now we try to remove it.
-        # print 'seam: '
-        # print len(seam)
-        return seam
+                row = next[1]
+                seam.append(next)
+
+            self.hori_seams.append(seam)
+
+        return self.hori_seams
 
 
     def removeVerticalSeam(self):
@@ -138,16 +144,18 @@ class SeamCarver:
             for col in range(pixel[1], width-1):
                 self.resized[row, col] = self.resized[row, col+1]
                 self.energy_map[row, col] = self.energy_map[row, col+1]
-                #self.vertical_seam_map[row, col] = self.vertical_seam_map[row, col+1]
+                self.vertical_seam_map[row, col] = self.vertical_seam_map[row, col+1]
 
         self.resized = np.delete(self.resized, width-1, 1)
         self.energy_map = np.delete(self.energy_map, width-1, 1)
-        #self.vertical_seam_map = np.delete(self.vertical_seams, width-1, 1)
+        self.vertical_seam_map = np.delete(self.vertical_seam_map, width-1, 1)
         return self.resized
 
     def removeHorizontalSeam(self):
-        horiSeams = self.calculateHorizontalSeams()
-        seam = self.findHorizontalSeam()
+        if not self.hori_seams:
+            self.findHorizontalSeams(10)
+
+        seam = self.hori_seams.popleft()
         [height, width] = self.resized.shape[:2]
 
         self.removedHSeams.append(copy.deepcopy(seam));
@@ -157,8 +165,11 @@ class SeamCarver:
             for row in range(pixel[1], height-1):
                 self.resized[row, col] = self.resized[row+1, col]
                 self.energy_map[row, col] = self.energy_map[row+1, col]
+                self.horizontal_seam_map[row, col] = self.horizontal_seam_map[row+1,col]
 
         self.resized = np.delete(self.resized, height-1, 0)
+        self.energy_map = np.delete(self.energy_map, height-1, 0)
+        self.horizontal_seam_map = np.delete(self.horizontal_seam_map, height-1, 0)
         return self.resized
 
     def addVerticalSeam(self):

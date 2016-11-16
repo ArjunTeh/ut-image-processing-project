@@ -5,7 +5,7 @@ import seamcalculations as sc
 from matplotlib import pyplot as plt
 
 #get the image into our variables
-img = cv2.imread("pictures/beach.jpg")
+img = cv2.imread("pictures/bird.jpg")
 cv2.namedWindow("energy map")
 cv2.namedWindow("seam carved", cv2.WINDOW_NORMAL)
 cv2.namedWindow("original" , cv2.WINDOW_NORMAL)
