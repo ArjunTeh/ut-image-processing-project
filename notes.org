@@ -1,0 +1,3 @@
+* Scratch on how to work seam carving
+** Keep note of the pixels that are gone
+   Could have a hashmap that has entries for all the pixels that have been removed
