@@ -38,8 +38,9 @@ class SeamCarver:
     #calculating seams function
     def calculateVerticalSeams(self):
         energyMap = self.energy_map
-        verticalSeams = energyMap.copy()
         [height, width] = energyMap.shape[:2]
+        verticalSeams = np.zeros((height, width));
+        verticalSeams[0,...] = energyMap[0,...]
 
         for rows in range(1, height):
             for cols in range(0, width):
@@ -84,10 +85,10 @@ class SeamCarver:
                 if min[0] > verticalSeams[height-1, i]:
                     min = [verticalSeams[height-1, i], i]
 
-            verticalSeams[height-1, min[1]] = float('inf')
+            #verticalSeams[height-1, min[1]] = float('inf')
             seam = [min]
             col = min[1]
-            for i in range(height-1, 0, -1):
+            for i in range(height-2, -1, -1):
                 next = [verticalSeams[i, col], col]
                 if col-1 > 0:
                     if verticalSeams[i, col-1] < next[0]:
@@ -184,7 +185,7 @@ class SeamCarver:
     def addVerticalSeam(self):
         if not self.vert_seams:
             self.createEnergyMap()
-            self.findVerticalSeams(10)
+            self.findVerticalSeams(self.seam_cache_size)
 
         seam = self.vert_seams.popleft()
         [height, width] = self.resized.shape[:2]
@@ -208,6 +209,24 @@ class SeamCarver:
         if (self.index < 0):
             return "can't do it right now"
         pass #push back pixels we've deleted?
+
+    def paintVertSeam(self):
+        if not self.vert_seams:
+            self.createEnergyMap()
+            self.calculateVerticalSeams()
+            self.findVerticalSeams(self.seam_cache_size)
+
+        seamImg = self.resized.copy()
+
+        for i in range(len(self.vert_seams)):
+            seam = self.vert_seams[i]
+            height = len(seam)
+            for row in range(height):
+                pixel = seam[height - row - 1]
+                seamImg[row, pixel[1]] = [0, 0, 255]
+
+        return seamImg
+
 
     #Getters and Setters
     def getEnergyMap(self):

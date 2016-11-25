@@ -48,7 +48,10 @@ while(cv2.getWindowProperty("original", 0) > -1):
         cv2.destroyAllWindows()
         break
     elif k == 81:
+        seamimg = seamCarver.paintVertSeam()
         newimg = seamCarver.removeVerticalSeam()
+        cv2.imshow("seam carved", seamimg)
+        cv2.waitKey(1000) & 0xFF
         cv2.resizeWindow("seam carved", newimg.shape[1], newimg.shape[0])
         cv2.resizeWindow("original", newimg.shape[1], newimg.shape[0])
         cv2.imshow("seam carved", newimg)
