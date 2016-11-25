@@ -8,7 +8,8 @@ class SeamCarver:
     #object variables
     #img = original image
     #energy_map = energy at each pixel
-    def __init__(self, img):
+    def __init__(self, img, cachesize):
+        self.seam_cache_size = cachesize
         self.resized = img.copy()
         self.orig_img = img.copy()
         self.index = 0;
@@ -24,11 +25,15 @@ class SeamCarver:
 
     def createEnergyMap(self):
         #calculate the gradient of the image
-        grad_img = cv2.Laplacian(self.resized, cv2.CV_64F)
+        blur_img = cv2.GaussianBlur(self.resized, (3, 3), 1)
+        grad_img = cv2.Laplacian(blur_img, cv2.CV_64F)
         grad_img_abs = np.absolute(grad_img)
+        sobelx = cv2.Sobel(blur_img,  cv2.CV_64F, 1, 0, ksize=3)
+        sobely = cv2.Sobel(blur_img,  cv2.CV_64F, 0, 1, ksize=3)
+        sobel_abs = cv2.addWeighted(abs(sobelx), 0.5, abs(sobely), 0.5, 0)
         #merge the channels to get the energy map
-        b,g,r = cv2.split(grad_img_abs)
-        self.energy_map = cv2.add( cv2.add(b, g), r)
+        b,g,r = cv2.split(sobel_abs)
+        self.energy_map = cv2.addWeighted( cv2.addWeighted(b, 0.5, g, 0.5, 0), 0.67, r, 0.33, 0)
 
     #calculating seams function
     def calculateVerticalSeams(self):
@@ -92,7 +97,7 @@ class SeamCarver:
                         next = [verticalSeams[i, col+1], col+1]
 
                 col = next[1]
-                verticalSeams[i, col] = float('inf')
+                #verticalSeams[i, col] = float('inf')
                 seam.append(next)
 
             self.vert_seams.append(seam)
@@ -132,7 +137,9 @@ class SeamCarver:
 
     def removeVerticalSeam(self):
         if not self.vert_seams:
-            self.findVerticalSeams(10)
+            self.createEnergyMap()
+            self.calculateVerticalSeams()
+            self.findVerticalSeams(self.seam_cache_size)
 
         seam = self.vert_seams.popleft()
         [height, width] = self.resized.shape[:2]
@@ -153,7 +160,9 @@ class SeamCarver:
 
     def removeHorizontalSeam(self):
         if not self.hori_seams:
-            self.findHorizontalSeams(10)
+            self.createEnergyMap()
+            self.calculateHorizontalSeams()
+            self.findHorizontalSeams(self.seam_cache_size)
 
         seam = self.hori_seams.popleft()
         [height, width] = self.resized.shape[:2]
@@ -173,9 +182,27 @@ class SeamCarver:
         return self.resized
 
     def addVerticalSeam(self):
-        if (self.index < 0):
-            return "can't do it right now"
-        pass #push back pixels we've deleted?
+        if not self.vert_seams:
+            self.createEnergyMap()
+            self.findVerticalSeams(10)
+
+        seam = self.vert_seams.popleft()
+        [height, width] = self.resized.shape[:2]
+        addResized = np.append(self.resized, np.zeros((height, 1, 3)), axis=1)
+        addEnergy = np.append(self.resized, np.zeros((height, 1, 3)), axis=1)
+
+        for row in range(len(seam)):
+            pixel = seam.pop()
+            for col in range(width-1, pixel[1], -1):
+                addResized[row, col] = self.resized[row, col-1]
+                addEnergy[row, col] = self.energy_map[row, col-1]
+
+            addResized[row, pixel[1]] = (addResized[row, pixel[1]-1] + addResized[row, pixel[1]+1])/2
+
+        self.resized = addResized
+        self.energy_map = addEnergy
+
+        return self.resized
 
     def addHorizontalSeam(self):
         if (self.index < 0):
