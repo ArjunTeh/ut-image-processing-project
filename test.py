@@ -56,6 +56,7 @@ while(cv2.getWindowProperty("original", 0) > -1):
         cv2.resizeWindow("original", newimg.shape[1], newimg.shape[0])
         cv2.imshow("seam carved", newimg)
         showEnergyMap()
+        print "deleted seam"
     elif k == 83:
         newimg = seamCarver.addVerticalSeam()
         cv2.resizeWindow("seam carved", newimg.shape[1], newimg.shape[0])

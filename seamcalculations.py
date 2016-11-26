@@ -52,28 +52,6 @@ class SeamCarver:
         self.vertical_seam_map = verticalSeams
         return verticalSeams
 
-    def calculateHorizontalSeams(self):
-        energyMap = self.energy_map
-        horizontalSeams = energyMap.copy()
-        [height, width] = energyMap.shape[:2]
-
-        for cols in range(1, width):
-            for rows in range(0, height):
-                center = energyMap[rows  , cols]
-                if rows > 0:
-                    below = energyMap[rows-1, cols]
-                else:
-                    below = float('inf')
-                if rows < height-1:
-                    above = energyMap[rows+1, cols]
-                else:
-                    above = float('inf')
-                horizontalSeams[rows, cols] = energyMap[rows, cols] + min(above, center, below)
-
-        self.horizontal_seam_map = horizontalSeams
-        return horizontalSeams
-
-
     def findVerticalSeams(self, num_seams):
         #find the lowest energy pixel on bottom row
         verticalSeams = self.vertical_seam_map
@@ -85,12 +63,12 @@ class SeamCarver:
                 if min[0] > verticalSeams[height-1, i]:
                     min = [verticalSeams[height-1, i], i]
 
-            #verticalSeams[height-1, min[1]] = float('inf')
+            verticalSeams[height-1, min[1]] = float('inf')
             seam = [min]
             col = min[1]
             for i in range(height-2, -1, -1):
                 next = [verticalSeams[i, col], col]
-                if col-1 > 0:
+                if col-1 > -1:
                     if verticalSeams[i, col-1] < next[0]:
                         next = [verticalSeams[i, col-1], col-1]
                 if col+1 < width:
@@ -98,43 +76,12 @@ class SeamCarver:
                         next = [verticalSeams[i, col+1], col+1]
 
                 col = next[1]
-                #verticalSeams[i, col] = float('inf')
+                verticalSeams[i, col] = float('inf')
                 seam.append(next)
 
             self.vert_seams.append(seam)
 
         return self.vert_seams
-
-    def findHorizontalSeams(self, num_seams):
-        #find the lowest energy pixel on bottom row
-        horizontalSeams = self.horizontal_seam_map
-        [height, width] = horizontalSeams.shape[:2]
-
-        for bleh in range(num_seams):
-            min = [float('inf'), -1]
-            for i in range(0, height):
-                if min[0] > horizontalSeams[i, width-1]:
-                    min = [horizontalSeams[i, width-1], i]
-
-            horizontalSeams[min[1], width-1] = float('inf')
-            seam = [min]
-            row = min[1]
-            for i in range(width-1, 0, -1):
-                next = [horizontalSeams[row, i], row]
-                if row-1 > 0:
-                    if horizontalSeams[row-1, i] < next[0]:
-                        next = [horizontalSeams[row-1, i], row-1]
-                if row+1 < width:
-                    if horizontalSeams[row+1, i] < next[0]:
-                        next = [horizontalSeams[row+1, i], row+1]
-
-                row = next[1]
-                seam.append(next)
-
-            self.hori_seams.append(seam)
-
-        return self.hori_seams
-
 
     def removeVerticalSeam(self):
         if not self.vert_seams:
@@ -157,29 +104,6 @@ class SeamCarver:
         self.resized = np.delete(self.resized, width-1, 1)
         self.energy_map = np.delete(self.energy_map, width-1, 1)
         self.vertical_seam_map = np.delete(self.vertical_seam_map, width-1, 1)
-        return self.resized
-
-    def removeHorizontalSeam(self):
-        if not self.hori_seams:
-            self.createEnergyMap()
-            self.calculateHorizontalSeams()
-            self.findHorizontalSeams(self.seam_cache_size)
-
-        seam = self.hori_seams.popleft()
-        [height, width] = self.resized.shape[:2]
-
-        self.removedHSeams.append(copy.deepcopy(seam));
-
-        for col in range(len(seam)):
-            pixel = seam.pop()
-            for row in range(pixel[1], height-1):
-                self.resized[row, col] = self.resized[row+1, col]
-                self.energy_map[row, col] = self.energy_map[row+1, col]
-                self.horizontal_seam_map[row, col] = self.horizontal_seam_map[row+1,col]
-
-        self.resized = np.delete(self.resized, height-1, 0)
-        self.energy_map = np.delete(self.energy_map, height-1, 0)
-        self.horizontal_seam_map = np.delete(self.horizontal_seam_map, height-1, 0)
         return self.resized
 
     def addVerticalSeam(self):
@@ -205,11 +129,6 @@ class SeamCarver:
 
         return self.resized
 
-    def addHorizontalSeam(self):
-        if (self.index < 0):
-            return "can't do it right now"
-        pass #push back pixels we've deleted?
-
     def paintVertSeam(self):
         if not self.vert_seams:
             self.createEnergyMap()
@@ -226,7 +145,6 @@ class SeamCarver:
                 seamImg[row, pixel[1]] = [0, 0, 255]
 
         return seamImg
-
 
     #Getters and Setters
     def getEnergyMap(self):
