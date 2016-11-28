@@ -41,6 +41,8 @@ cv2.imshow("original", img)
 
 newimg = img
 
+scale = 1
+
 while(cv2.getWindowProperty("original", 0) > -1):
     k = cv2.waitKey(0) & 0xFF
 
@@ -52,8 +54,8 @@ while(cv2.getWindowProperty("original", 0) > -1):
         newimg = seamCarver.removeVerticalSeam()
         cv2.imshow("seam carved", seamimg)
         cv2.waitKey(1000) & 0xFF
-        cv2.resizeWindow("seam carved", newimg.shape[1], newimg.shape[0])
-        cv2.resizeWindow("original", newimg.shape[1], newimg.shape[0])
+        cv2.resizeWindow("seam carved", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
+        cv2.resizeWindow("original", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
         cv2.imshow("seam carved", newimg)
         showEnergyMap()
         print "deleted seam"
@@ -62,22 +64,13 @@ while(cv2.getWindowProperty("original", 0) > -1):
         cv2.resizeWindow("seam carved", newimg.shape[1], newimg.shape[0])
         cv2.resizeWindow("original", newimg.shape[1], newimg.shape[0])
         cv2.imshow("seam carved", newimg)
-    elif k == 82:
-        newimg = seamCarver.removeHorizontalSeam()
-        cv2.resizeWindow("seam carved", newimg.shape[1], newimg.shape[0])
-        cv2.resizeWindow("original", newimg.shape[1], newimg.shape[0])
-        cv2.imshow("seam carved", newimg)
-    elif k == 84:
-        newimg = seamCarver.addHorizontalSeam()
-        pass
-    # elif k == 104:
-    #     curimg = seamCarver.resized
-    #     for i in range(curimg.shape[0]/2):
-    #         seamCarver.removeHorizontalSeam()
-    #     for i in range(curimg.shape[1]/2):
-    #         seamCarver.removeVerticalSeam()
-    #     curimg = seamCarver.resized
-    #     cv2.resizeWindow("seam carved", curimg.shape[1], curimg.shape[0])
-    #     cv2.imshow("seam carved", curimg)
+    elif k == 61:
+        scale += 0.2
+        cv2.resizeWindow("seam carved", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
+        cv2.resizeWindow("original", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
+    elif k == 45:
+        scale -= 0.2
+        cv2.resizeWindow("seam carved", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
+        cv2.resizeWindow("original", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
     else:
         print 'pressed: ' + str(k)

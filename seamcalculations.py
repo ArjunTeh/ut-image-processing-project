@@ -15,11 +15,8 @@ class SeamCarver:
         self.index = 0;
         self.createEnergyMap()
         self.calculateVerticalSeams()
-        self.calculateHorizontalSeams()
         self.removedVSeams = []
-        self.removedHSeams = []
         self.vert_seams = deque([])
-        self.hori_seams = deque([])
 
 
 
@@ -44,9 +41,9 @@ class SeamCarver:
 
         for rows in range(1, height):
             for cols in range(0, width):
-                center = energyMap[rows-1, cols]
-                left   = energyMap[rows-1, cols-1] if cols > 0 else float('inf')
-                right  = energyMap[rows-1, cols+1] if cols < width-1 else float('inf')
+                center = verticalSeams[rows-1, cols]
+                left   = verticalSeams[rows-1, cols-1] if cols > 0 else float('inf')
+                right  = verticalSeams[rows-1, cols+1] if cols < width-1 else float('inf')
                 verticalSeams[rows, cols] = energyMap[rows, cols] + min(left,center,right)
 
         self.vertical_seam_map = verticalSeams
