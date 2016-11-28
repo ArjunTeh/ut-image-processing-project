@@ -119,6 +119,7 @@ class SeamCarver:
         return self.resized
 
     def removeSeams(self, numSeams):
+        self.seam_index = np.zeros((self.resized.shape[:2]))
         toreturn = None
         for i in range(numSeams):
             toreturn = self.removeVerticalSeam()
@@ -128,13 +129,14 @@ class SeamCarver:
     def addVerticalSeam(self, numSeams):
         [height, width, depth] = self.resized.shape[:]
 
+        self.generatePixelMap(self.resized)
+        self.seam_index = np.zeros((height,width))
         self.removeSeams(numSeams)
-        self.generatePixelMap(self.img)
+
 
         addResized = cv2.copyMakeBorder(self.resized, 0,0,0,numSeams, cv2.BORDER_REPLICATE)
         seamResize = cv2.copyMakeBorder(self.seam_index, 0,0,0,numSeams, cv2.BORDER_REPLICATE)
-        print seamResize.shape
-        print self.seam_index.shape
+        print "done calculating seams"
 
         for ind in range(1, numSeams+1):
             for row in range(height):
@@ -149,6 +151,7 @@ class SeamCarver:
 
 
         self.resized = addResized
+        self.generatePixelMap(self.resized)
 
         return addResized
 
