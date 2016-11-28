@@ -35,8 +35,8 @@ class SeamCarver:
     def createEnergyMap(self):
         #calculate the gradient of the image
         blur_img = cv2.GaussianBlur(self.resized, (3, 3), 1)
-        grad_img = cv2.Laplacian(blur_img, cv2.CV_64F)
-        grad_img_abs = np.absolute(grad_img)
+        # grad_img = cv2.Laplacian(blur_img, cv2.CV_64F)
+        # grad_img_abs = np.absolute(grad_img)
         sobelx = cv2.Sobel(blur_img,  cv2.CV_64F, 1, 0, ksize=3)
         sobely = cv2.Sobel(blur_img,  cv2.CV_64F, 0, 1, ksize=3)
         sobel_abs = cv2.addWeighted(abs(sobelx), 0.5, abs(sobely), 0.5, 0)
@@ -100,17 +100,16 @@ class SeamCarver:
         seam = self.vert_seams.popleft()
         [height, width] = self.resized.shape[:2]
 
-        self.removedVSeams.append(copy.deepcopy(seam));
         self.index += 1;
 
         for row in range(len(seam)):
             pixel = seam.pop()
             op = self.pixel_map[row][pixel[1]]
-            self.seam_index[op[0], op[1]] = self.index
+            self.seam_index[row, op[1]] = self.index
             for col in range(pixel[1], width-1):
                 self.resized[row, col] = self.resized[row, col+1]
-                self.energy_map[row, col] = self.energy_map[row, col+1]
-                self.vertical_seam_map[row, col] = self.vertical_seam_map[row, col+1]
+                # self.energy_map[row, col] = self.energy_map[row, col+1]
+                # self.vertical_seam_map[row, col] = self.vertical_seam_map[row, col+1]
                 self.pixel_map[row][col] = self.pixel_map[row][col+1]
 
         self.resized = np.delete(self.resized, width-1, 1)
@@ -119,7 +118,9 @@ class SeamCarver:
         return self.resized
 
     def removeSeams(self, numSeams):
+        self.index = 0
         self.seam_index = np.zeros((self.resized.shape[:2]))
+        self.generatePixelMap(self.resized)
         toreturn = None
         for i in range(numSeams):
             toreturn = self.removeVerticalSeam()
@@ -129,25 +130,24 @@ class SeamCarver:
     def addVerticalSeam(self, numSeams):
         [height, width, depth] = self.resized.shape[:]
 
-        self.generatePixelMap(self.resized)
+        addResized = cv2.copyMakeBorder(self.resized, 0,0,0,numSeams, cv2.BORDER_REPLICATE)
         self.seam_index = np.zeros((height,width))
         self.removeSeams(numSeams)
 
-
-        addResized = cv2.copyMakeBorder(self.resized, 0,0,0,numSeams, cv2.BORDER_REPLICATE)
         seamResize = cv2.copyMakeBorder(self.seam_index, 0,0,0,numSeams, cv2.BORDER_REPLICATE)
         print "done calculating seams"
 
         for ind in range(1, numSeams+1):
             for row in range(height):
-                for col in range(width-1, 0, -1):
+                for col in range(addResized.shape[1]-1, 0, -1):
                     addResized[row, col] = addResized[row, col-1]
                     seamResize[row, col] = seamResize[row, col-1]
                     if seamResize[row, col] == ind:
+                        break
                         # addResized[row,col] += addResized[row, col+1]
                         # addResized[row,col] /= 2
-                        seamResize[row,col] = 0
-                        break
+                        # seamResize[row,col] = 0
+
 
 
         self.resized = addResized

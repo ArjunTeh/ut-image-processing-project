@@ -60,8 +60,8 @@ while(cv2.getWindowProperty("original", 0) > -1):
         showEnergyMap()
     elif k == 83:
         newimg = seamCarver.addVerticalSeam(50)
-        cv2.resizeWindow("seam carved", newimg.shape[1], newimg.shape[0])
-        cv2.resizeWindow("original", newimg.shape[1], newimg.shape[0])
+        cv2.resizeWindow("seam carved", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale))
+        cv2.resizeWindow("original", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale))
         cv2.imshow("seam carved", newimg)
     elif k == 61:
         scale += 0.2
