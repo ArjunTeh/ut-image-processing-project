@@ -11,12 +11,24 @@ class SeamCarver:
     def __init__(self, img, cachesize):
         self.seam_cache_size = cachesize
         self.resized = img.copy()
-        self.orig_img = img.copy()
+        self.img = img.copy()
+        self.seam_index = np.zeros(img.shape[:2])
         self.index = 0;
         self.createEnergyMap()
         self.calculateVerticalSeams()
         self.removedVSeams = []
         self.vert_seams = deque([])
+        self.generatePixelMap(img)
+
+
+
+    def generatePixelMap(self, img):
+        [height, width] = img.shape[:2]
+        self.pixel_map = [[0 for c in range(width)] for r in range(height)]
+        for row in range(height):
+            for col in range(width):
+                self.pixel_map[row][col] = [row, col]
+
 
 
 
@@ -49,88 +61,103 @@ class SeamCarver:
         self.vertical_seam_map = verticalSeams
         return verticalSeams
 
-    def findVerticalSeams(self, num_seams):
+    def findVerticalSeams(self):
         #find the lowest energy pixel on bottom row
         verticalSeams = self.vertical_seam_map
         [height, width] = verticalSeams.shape[:2]
 
-        for bleh in range(num_seams):
-            min = [float('inf'), -1]
-            for i in range(0, width):
-                if min[0] > verticalSeams[height-1, i]:
-                    min = [verticalSeams[height-1, i], i]
 
-            verticalSeams[height-1, min[1]] = float('inf')
-            seam = [min]
-            col = min[1]
-            for i in range(height-2, -1, -1):
-                next = [verticalSeams[i, col], col]
-                if col-1 > -1:
-                    if verticalSeams[i, col-1] < next[0]:
-                        next = [verticalSeams[i, col-1], col-1]
-                if col+1 < width:
-                    if verticalSeams[i, col+1] < next[0]:
-                        next = [verticalSeams[i, col+1], col+1]
+        min = [float('inf'), -1]
+        for i in range(0, width):
+            if min[0] > verticalSeams[height-1, i]:
+                min = [verticalSeams[height-1, i], i]
 
-                col = next[1]
-                verticalSeams[i, col] = float('inf')
-                seam.append(next)
+        #verticalSeams[height-1, min[1]] = float('inf')
+        seam = [min]
+        col = min[1]
+        for i in range(height-2, -1, -1):
+            next = [verticalSeams[i, col], col]
+            if col-1 > -1:
+                if verticalSeams[i, col-1] < next[0]:
+                    next = [verticalSeams[i, col-1], col-1]
+            if col+1 < width:
+                if verticalSeams[i, col+1] < next[0]:
+                    next = [verticalSeams[i, col+1], col+1]
 
-            self.vert_seams.append(seam)
+            col = next[1]
+            #verticalSeams[i, col] = float('inf')
+            seam.append(next)
 
-        return self.vert_seams
+        self.vert_seams.append(seam)
+        return seam
 
     def removeVerticalSeam(self):
         if not self.vert_seams:
             self.createEnergyMap()
             self.calculateVerticalSeams()
-            self.findVerticalSeams(self.seam_cache_size)
+            self.findVerticalSeams()
 
         seam = self.vert_seams.popleft()
         [height, width] = self.resized.shape[:2]
 
         self.removedVSeams.append(copy.deepcopy(seam));
+        self.index += 1;
 
         for row in range(len(seam)):
             pixel = seam.pop()
+            op = self.pixel_map[row][pixel[1]]
+            self.seam_index[op[0], op[1]] = self.index
             for col in range(pixel[1], width-1):
                 self.resized[row, col] = self.resized[row, col+1]
                 self.energy_map[row, col] = self.energy_map[row, col+1]
                 self.vertical_seam_map[row, col] = self.vertical_seam_map[row, col+1]
+                self.pixel_map[row][col] = self.pixel_map[row][col+1]
 
         self.resized = np.delete(self.resized, width-1, 1)
         self.energy_map = np.delete(self.energy_map, width-1, 1)
         self.vertical_seam_map = np.delete(self.vertical_seam_map, width-1, 1)
         return self.resized
 
-    def addVerticalSeam(self):
-        if not self.vert_seams:
-            self.createEnergyMap()
-            self.findVerticalSeams(self.seam_cache_size)
+    def removeSeams(self, numSeams):
+        toreturn = None
+        for i in range(numSeams):
+            toreturn = self.removeVerticalSeam()
 
-        seam = self.vert_seams.popleft()
-        [height, width] = self.resized.shape[:2]
-        addResized = np.append(self.resized, np.zeros((height, 1, 3)), axis=1)
-        addEnergy = np.append(self.resized, np.zeros((height, 1, 3)), axis=1)
+        return toreturn
 
-        for row in range(len(seam)):
-            pixel = seam.pop()
-            for col in range(width-1, pixel[1], -1):
-                addResized[row, col] = self.resized[row, col-1]
-                addEnergy[row, col] = self.energy_map[row, col-1]
+    def addVerticalSeam(self, numSeams):
+        [height, width, depth] = self.resized.shape[:]
 
-            addResized[row, pixel[1]] = (addResized[row, pixel[1]-1] + addResized[row, pixel[1]+1])/2
+        self.removeSeams(numSeams)
+        self.generatePixelMap(self.img)
+
+        addResized = cv2.copyMakeBorder(self.resized, 0,0,0,numSeams, cv2.BORDER_REPLICATE)
+        seamResize = cv2.copyMakeBorder(self.seam_index, 0,0,0,numSeams, cv2.BORDER_REPLICATE)
+        print seamResize.shape
+        print self.seam_index.shape
+
+        for ind in range(1, numSeams+1):
+            for row in range(height):
+                for col in range(width-1, 0, -1):
+                    addResized[row, col] = addResized[row, col-1]
+                    seamResize[row, col] = seamResize[row, col-1]
+                    if seamResize[row, col] == ind:
+                        # addResized[row,col] += addResized[row, col+1]
+                        # addResized[row,col] /= 2
+                        seamResize[row,col] = 0
+                        break
+
 
         self.resized = addResized
-        self.energy_map = addEnergy
 
-        return self.resized
+        return addResized
+
 
     def paintVertSeam(self):
         if not self.vert_seams:
             self.createEnergyMap()
             self.calculateVerticalSeams()
-            self.findVerticalSeams(self.seam_cache_size)
+            self.findVerticalSeams()
 
         seamImg = self.resized.copy()
 

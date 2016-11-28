@@ -8,7 +8,7 @@ from matplotlib import pyplot as plt
 
 #helper functions
 def showEnergyMap():
-    energy_map = seamCarver.getEnergyMap()
+    energy_map = seamCarver.seam_index#getEnergyMap()
     energy_map_norm = cv2.normalize(energy_map)
     normal_em = cv2.convertScaleAbs(energy_map)
     normal_em = cv2.applyColorMap(normal_em, cv2.COLORMAP_JET)
@@ -58,9 +58,8 @@ while(cv2.getWindowProperty("original", 0) > -1):
         cv2.resizeWindow("original", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
         cv2.imshow("seam carved", newimg)
         showEnergyMap()
-        print "deleted seam"
     elif k == 83:
-        newimg = seamCarver.addVerticalSeam()
+        newimg = seamCarver.addVerticalSeam(50)
         cv2.resizeWindow("seam carved", newimg.shape[1], newimg.shape[0])
         cv2.resizeWindow("original", newimg.shape[1], newimg.shape[0])
         cv2.imshow("seam carved", newimg)
