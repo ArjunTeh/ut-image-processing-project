@@ -14,6 +14,7 @@ class SeamCarver:
         self.img = img.copy()
         self.seam_index = np.zeros(img.shape[:2])
         self.index = 0;
+        self.energy_mask = np.zeros(img.shape[:2])
         self.createEnergyMap()
         self.calculateVerticalSeams()
         self.removedVSeams = []
@@ -30,8 +31,6 @@ class SeamCarver:
                 self.pixel_map[row][col] = [row, col]
 
 
-
-
     def createEnergyMap(self):
         #calculate the gradient of the image
         blur_img = cv2.GaussianBlur(self.resized, (3, 3), 1)
@@ -43,6 +42,7 @@ class SeamCarver:
         #merge the channels to get the energy map
         b,g,r = cv2.split(sobel_abs)
         self.energy_map = cv2.addWeighted( cv2.addWeighted(b, 0.5, g, 0.5, 0), 0.67, r, 0.33, 0)
+        self.energy_map -= self.energy_mask
 
     #calculating seams function
     def calculateVerticalSeams(self):
@@ -110,10 +110,12 @@ class SeamCarver:
                 self.resized[row, col] = self.resized[row, col+1]
                 # self.energy_map[row, col] = self.energy_map[row, col+1]
                 # self.vertical_seam_map[row, col] = self.vertical_seam_map[row, col+1]
+                self.energy_mask[row][col] = self.energy_mask[row][col+1]
                 self.pixel_map[row][col] = self.pixel_map[row][col+1]
 
         self.resized = np.delete(self.resized, width-1, 1)
         self.energy_map = np.delete(self.energy_map, width-1, 1)
+        self.energy_mask = np.delete(self.energy_mask, width-1, 1)
         self.vertical_seam_map = np.delete(self.vertical_seam_map, width-1, 1)
         return self.resized
 
@@ -143,10 +145,11 @@ class SeamCarver:
                     addResized[row, col] = addResized[row, col-1]
                     seamResize[row, col] = seamResize[row, col-1]
                     if seamResize[row, col] == ind:
-                        break
-                        # addResized[row,col] += addResized[row, col+1]
-                        # addResized[row,col] /= 2
+                        # if col< addResized.shape[1]-1:
+                        #     addResized[row,col] = addResized[row,col] + addResized[row, col+1]
+                        # addResized[row,col] = addResized[row,col]/2
                         # seamResize[row,col] = 0
+                        break
 
 
 
@@ -154,6 +157,12 @@ class SeamCarver:
         self.generatePixelMap(self.resized)
 
         return addResized
+
+    def removeSelection(self, energyMask, numSeams):
+        self.energy_mask = energyMask.copy()
+        self.removeSeams(numSeams)
+        return self.addVerticalSeam(numSeams)
+
 
 
     def paintVertSeam(self):
