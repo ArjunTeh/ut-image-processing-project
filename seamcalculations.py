@@ -145,10 +145,11 @@ class SeamCarver:
                     addResized[row, col] = addResized[row, col-1]
                     seamResize[row, col] = seamResize[row, col-1]
                     if seamResize[row, col] == ind:
-                        # if col< addResized.shape[1]-1:
-                        #     addResized[row,col] = addResized[row,col] + addResized[row, col+1]
-                        # addResized[row,col] = addResized[row,col]/2
-                        # seamResize[row,col] = 0
+                        if col< addResized.shape[1]-1:
+                            addResized[row,col,0] = 0.5*addResized[row,col,0] + 0.5*addResized[row, col+1,0]
+                            addResized[row,col,1] = 0.5*addResized[row,col,1] + 0.5*addResized[row, col+1,1]
+                            addResized[row,col,2] = 0.5*addResized[row,col,2] + 0.5*addResized[row, col+1,2]
+                        seamResize[row,col] = 0
                         break
 
 
@@ -179,6 +180,7 @@ class SeamCarver:
             for row in range(height):
                 pixel = seam[height - row - 1]
                 seamImg[row, pixel[1]] = [0, 0, 255]
+                self.energy_map[row, pixel[1]] = 1000
 
         return seamImg
 

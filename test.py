@@ -12,6 +12,8 @@ def showEnergyMap():
     energy_map_norm = cv2.normalize(energy_map)
     normal_em = cv2.convertScaleAbs(energy_map)
     normal_em = cv2.applyColorMap(normal_em, cv2.COLORMAP_JET)
+    # im_em = seamCarver.img
+    # im_em[:,:,2] = cv2.addWeighted(im_em[:,:,2], 1.0, normal_em, 200, 1)
     cv2.imshow("energy map", normal_em)
 
 
@@ -85,18 +87,20 @@ while(cv2.getWindowProperty("original", 0) > -1):
         break
     elif k == 81:
         seamimg = seamCarver.paintVertSeam()
-        newimg = seamCarver.removeSeams(1)
+        newimg = seamCarver.removeSeams(cachesize)
         cv2.imshow("seam carved", seamimg)
-        cv2.waitKey(1000) & 0xFF
+        cv2.waitKey(0) & 0xFF
         cv2.resizeWindow("seam carved", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
         cv2.resizeWindow("original", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale) )
         cv2.imshow("seam carved", newimg)
+        blank = cv2.convertScaleAbs(np.zeros(seamCarver.resized.shape))
         showEnergyMap()
     elif k == 83:
-        newimg = seamCarver.addVerticalSeam(50)
+        newimg = seamCarver.addVerticalSeam(cachesize)
         cv2.resizeWindow("seam carved", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale))
         cv2.resizeWindow("original", int(newimg.shape[1]*scale), int(newimg.shape[0]*scale))
         cv2.imshow("seam carved", newimg)
+        blank = cv2.convertScaleAbs(np.zeros(seamCarver.resized.shape))
     elif k == 100:
         #delete the object from the scene
         objWidth = ex - ix + 1
